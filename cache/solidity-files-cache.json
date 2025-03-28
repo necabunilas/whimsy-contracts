@@ -2,17 +2,17 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyToken.sol": {
-      "lastModificationDate": 1743071981667,
-      "contentHash": "860e0b92dea7c667561a1b66e33d924c",
+      "lastModificationDate": 1743147625955,
+      "contentHash": "ffd4a77b2204a712a37696df3908e101",
       "sourceName": "contracts/PropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -34,7 +34,7 @@
         "@openzeppelin/contracts/access/Ownable.sol"
       ],
       "versionPragmas": [
-        "^0.8.4"
+        "^0.8.20"
       ],
       "artifacts": [
         "PropertyToken"
@@ -47,11 +47,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -85,11 +85,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -126,11 +126,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -162,11 +162,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -198,11 +198,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -236,11 +236,11 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -267,18 +267,18 @@
         "IERC20Metadata"
       ]
     },
-    "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/TokenOperator.sol": {
-      "lastModificationDate": 1743071986217,
-      "contentHash": "9162a4565efc0a4bc48d4794fabe97b3",
-      "sourceName": "contracts/TokenOperator.sol",
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyTokenFactory.sol": {
+      "lastModificationDate": 1743136588316,
+      "contentHash": "9f690c8ab60a84d7d03065f88ba2b748",
+      "sourceName": "contracts/PropertyTokenFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 50
           },
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -297,13 +297,50 @@
       },
       "imports": [
         "@openzeppelin/contracts/access/Ownable.sol",
+        "./interfaces/IPropertyToken.sol",
         "./PropertyToken.sol"
       ],
       "versionPragmas": [
-        "^0.8.4"
+        "^0.8.20"
       ],
       "artifacts": [
-        "TokenOperator"
+        "PropertyTokenFactory"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/interfaces/IPropertyToken.sol": {
+      "lastModificationDate": 1743133200137,
+      "contentHash": "31e5636010846c25ef3a03a89875cdac",
+      "sourceName": "contracts/interfaces/IPropertyToken.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 50
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IPropertyToken"
       ]
     }
   }
