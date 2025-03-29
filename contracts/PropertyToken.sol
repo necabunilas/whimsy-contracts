@@ -99,7 +99,7 @@ contract PropertyToken is ERC20, Ownable {
         seller = newSeller;
     }
 
-    function increaseSupply(uint256 amount) external onlyOperator {
+    function increaseSupply(uint256 amount) external onlyOwner {
         _mint(seller, amount);
         emit SupplyIncreased(amount);
     }

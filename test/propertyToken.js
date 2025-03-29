@@ -266,7 +266,6 @@ describe("PropertyTokenFactory", function () {
 
     // Check that the token contract is deployed (has code)
     const tokenCode = await ethers.provider.getCode(tokenAddr);
-    console.log("Token code:", tokenCode);
     expect(tokenCode).to.not.equal("0x");
 
     // Deposit 1 ETH into the token contract.
@@ -299,8 +298,7 @@ describe("PropertyTokenFactory", function () {
     // Withdraw ETH via the factory's withdraw function using the owner signer.
     console.log("Calling factory.withdraw(1)...");
     const withdrawTx = await factory.connect(owner).withdraw(1);
-    const receipt = await withdrawTx.wait();
-    console.log("Withdraw tx receipt events:", receipt.events);
+    await withdrawTx.wait();
 
     // Get seller's balance after withdrawal.
     const sellerBalanceAfter = await ethers.provider.getBalance(seller.address);
