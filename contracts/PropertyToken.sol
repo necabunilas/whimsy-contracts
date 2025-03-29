@@ -8,7 +8,7 @@ contract PropertyToken is ERC20, Ownable {
     address public seller;
     address public operator;
 
-    bool public transfersEnabled = false;
+    bool public transfersEnabled = true;
 
     uint256 public tokenPrice;
     uint256 public tokensForSale;
@@ -64,7 +64,7 @@ contract PropertyToken is ERC20, Ownable {
         uint256 initialSupply_,
         address seller_,
         address whimsyAddress
-    ) ERC20(name_, symbol_) Ownable(seller_) {
+    ) ERC20(name_, symbol_) Ownable(msg.sender) {
         require(seller_ != address(0), "Invalid seller address");
         require(whimsyAddress != address(0), "Invalid whimsy address");
 
@@ -174,7 +174,7 @@ contract PropertyToken is ERC20, Ownable {
             "Timeout not reached"
         );
 
-        tokensForSale += res.amount;
+        // Do not adjust tokensForSale – the reservation did not reduce it.
         delete pendingReservations[buyer];
 
         (bool success, ) = payable(buyer).call{value: res.amount * tokenPrice}(
