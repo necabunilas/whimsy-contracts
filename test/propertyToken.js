@@ -318,4 +318,36 @@ describe("PropertyTokenFactory", function () {
       "Not authorized: operator only"
     );
   });
+
+  it("should claw back tokens from a buyer back to the owner", async function () {
+    const tokenAddress = await factory.getIPropertyToken(1);
+    const tokenInstance = await ethers.getContractAt("PropertyToken", tokenAddress);
+  
+    const buyAmount = 100;
+    const tokenPrice = ethers.parseEther("0.01");
+    const tokensForSale = 670;
+    const targetOwnership = 300;
+  
+    // Buyer agrees to disclaimer
+    await tokenInstance.connect(buyer).agreeDisclaimer();
+  
+    // Set sale parameters
+    await factory.setSaleParameters(1, tokensForSale, tokenPrice, targetOwnership);
+  
+    const value = tokenPrice * BigInt(buyAmount);
+    await tokenInstance.connect(buyer).buyTokens(buyAmount, { value });
+  
+    const buyerBalanceBefore = await tokenInstance.balanceOf(buyer.address);
+    expect(buyerBalanceBefore).to.equal(buyAmount);
+  
+    // Claw back tokens
+    await factory.clawback(1, buyer.address);
+  
+    // Tokens should be moved from buyer to factory owner
+    const buyerBalanceAfter = await tokenInstance.balanceOf(buyer.address);
+    const ownerBalance = await tokenInstance.balanceOf(owner.address);
+  
+    expect(buyerBalanceAfter).to.equal(0);
+    expect(ownerBalance).to.equal(buyAmount);
+  });
 });

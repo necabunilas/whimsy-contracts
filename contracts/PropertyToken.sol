@@ -220,6 +220,14 @@ contract PropertyToken is ERC20, Ownable {
         return preMoneyValuation + totalRaised;
     }
 
+    function operatorTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) external onlyOperator {
+        _transfer(from, to, amount);
+    }
+
     // ===== Transfer Hook =====
     function _update(
         address from,
@@ -342,3 +350,4 @@ contract PropertyToken is ERC20, Ownable {
 //is withdrawal once or per transaction?
 
 //wei amount
+//add clawback

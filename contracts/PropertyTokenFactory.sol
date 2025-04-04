@@ -57,6 +57,15 @@ contract PropertyTokenFactory is Ownable {
 
     // ========= Token Creation ==========
 
+    // Add this event declaration along with your other events.
+    event Clawback(
+        uint256 indexed propertyId,
+        address indexed tokenOwner,
+        uint256 amount
+    );
+
+    // ...
+
     function createIPropertyToken(
         string memory name,
         string memory symbol,
@@ -159,13 +168,19 @@ contract PropertyTokenFactory is Ownable {
         emit SellerUpdated(propertyId, newSeller);
     }
 
-    function withdraw(uint256 propertyId) external onlyOwner {
+    function clawback(
+        uint256 propertyId,
+        address tokenOwner
+    ) external onlyOwner {
         Property memory p = properties[propertyId];
         require(p.token != address(0), "Invalid token address");
-        uint256 beforeBal = address(this).balance;
-        IPropertyToken(p.token).withdraw();
-        uint256 received = address(this).balance - beforeBal;
-        emit Withdrawn(propertyId, received, p.seller);
+
+        IPropertyToken token = IPropertyToken(p.token);
+        uint256 balance = token.balanceOf(tokenOwner);
+        require(balance > 0, "No tokens to claw back");
+
+        token.operatorTransfer(tokenOwner, owner(), balance);
+        emit Clawback(propertyId, tokenOwner, balance);
     }
 
     // ========= Governance ==========

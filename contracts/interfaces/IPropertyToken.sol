@@ -10,6 +10,7 @@ interface IPropertyToken {
         uint256 targetSellerOwnership
     ) external;
     function buyTokens(uint256 amount) external payable;
+    function operatorTransfer(address from, address to, uint256 amount) external;
     function increaseSupply(uint256 additionalTokens) external;
     function updateSellerAddress(address newSeller) external;
     function setOperator(address newOperator) external;

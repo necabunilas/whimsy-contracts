@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyToken.sol": {
-      "lastModificationDate": 1743238486270,
-      "contentHash": "7451cea2653aff36f07e75bd2c44c54d",
+      "lastModificationDate": 1743770917727,
+      "contentHash": "98566e8a9a589ecd9053a165838196c4",
       "sourceName": "contracts/PropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -268,8 +268,8 @@
       ]
     },
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyTokenFactory.sol": {
-      "lastModificationDate": 1743231467768,
-      "contentHash": "aa28f3bff6e69d21217af611d5cdde3a",
+      "lastModificationDate": 1743770950221,
+      "contentHash": "d7b91963140c5d05505bcbd76a629b3f",
       "sourceName": "contracts/PropertyTokenFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -308,8 +308,8 @@
       ]
     },
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/interfaces/IPropertyToken.sol": {
-      "lastModificationDate": 1743133200137,
-      "contentHash": "31e5636010846c25ef3a03a89875cdac",
+      "lastModificationDate": 1743770936349,
+      "contentHash": "e6237b531177ed954157b05eeb39a10a",
       "sourceName": "contracts/interfaces/IPropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
