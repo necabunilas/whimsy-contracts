@@ -2,247 +2,187 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./interfaces/IPropertyToken.sol";
 import "./PropertyToken.sol";
 
-error NotOperator();
 error Unauthorized();
 
-contract PropertyTokenFactory is Ownable {
-    struct Property {
-        address token;
-        address seller;
-    }
-
+contract PropertyTokenFactory is Ownable, Pausable {
+    struct Property { address token; address seller; }
     mapping(uint256 => Property) public properties;
     uint256 public propertyCount;
     address public immutable whimsy;
 
     event NewProperty(uint256 indexed propertyId, address tokenAddress);
-    event SaleParametersSet(
-        uint256 indexed propertyId,
-        uint256 tokensForSale,
-        uint256 price,
-        uint256 sellerOwnership
-    );
-    event TokensPurchased(
-        uint256 indexed propertyId,
-        address buyer,
-        uint256 amount
-    );
     event SellerUpdated(uint256 indexed propertyId, address newSeller);
-    event SupplyIncreased(uint256 indexed propertyId, uint256 newAmount);
-    event Withdrawn(uint256 indexed propertyId, uint256 amount, address to);
-    event ProposalCreated(
-        uint256 indexed propertyId,
-        uint256 proposalId,
-        string description
-    );
-    event Voted(
-        uint256 indexed propertyId,
-        uint256 proposalId,
-        address voter,
-        bool support,
-        uint256 weight
-    );
-    event ProposalFinalized(
-        uint256 indexed propertyId,
-        uint256 proposalId,
-        bool passed
-    );
+    event Clawback(uint256 indexed propertyId, address indexed tokenOwner, uint256 amount);
+    event TokenOwnershipTransferred(uint256 indexed propertyId, address indexed previousOwner, address indexed newOwner);
 
     constructor(address whimsyAddress) Ownable(msg.sender) {
+        require(whimsyAddress != address(0), "Factory: zero whimsy");
         whimsy = whimsyAddress;
     }
 
-    // ========= Token Creation ==========
+    modifier validProperty(uint256 pid) {
+        require(pid > 0 && pid <= propertyCount, "Factory: bad id");
+        _;
+    }
 
-    // Add this event declaration along with your other events.
-    event Clawback(
-        uint256 indexed propertyId,
-        address indexed tokenOwner,
-        uint256 amount
-    );
-
-    // ...
+    /// @dev helper to reduce bytecode
+    function _t(uint256 pid) internal view returns (IPropertyToken) {
+        return IPropertyToken(properties[pid].token);
+    }
 
     function createIPropertyToken(
         string memory name,
         string memory symbol,
-        uint256 initialSupply,
-        address seller
-    ) external onlyOwner returns (address token) {
-        PropertyToken newToken = new PropertyToken(
-            name,
-            symbol,
-            initialSupply,
-            seller,
-            whimsy
-        );
-        newToken.setOperator(address(this));
-
-        propertyCount += 1;
-        properties[propertyCount] = Property({
-            token: address(newToken),
-            seller: seller
-        });
-
-        emit NewProperty(propertyCount, address(newToken));
-        return address(newToken);
+        uint256   initialSupply,
+        address   seller_
+    ) external onlyOwner returns (address tok) {
+        require(seller_ != address(0), "Factory: zero seller");
+        tok = address(new PropertyToken(
+            name, symbol, initialSupply, seller_, whimsy, address(this)
+        ));
+        IPropertyToken(tok).setOperator(address(this));
+        properties[++propertyCount] = Property(tok, seller_);
+        emit NewProperty(propertyCount, tok);
     }
-
-    // ========= Sale Management ==========
 
     function setSaleParameters(
-        uint256 propertyId,
-        uint256 tokensForSale,
-        uint256 tokenPrice,
-        uint256 sellerTargetOwnership
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.setSaleParameters(
-            tokensForSale,
-            tokenPrice,
-            sellerTargetOwnership
-        );
-        emit SaleParametersSet(
-            propertyId,
-            tokensForSale,
-            tokenPrice,
-            sellerTargetOwnership
-        );
+        uint256 pid,
+        uint256 forSale,
+        uint256 price,
+        uint256 target
+    ) external onlyOwner whenNotPaused validProperty(pid) {
+        _t(pid).setSaleParameters(forSale, price, target);
+        // token itself emits SaleParametersUpdated
     }
 
-    function buyTokens(uint256 propertyId, uint256 amount) external payable {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.buyTokens{value: msg.value}(amount);
-        emit TokensPurchased(propertyId, msg.sender, amount);
+    function buyTokens(uint256 pid, uint256 amount)
+      external payable whenNotPaused validProperty(pid)
+    {
+        _t(pid).buyTokensFor{value: msg.value}(msg.sender, amount);
     }
 
-    function agreeDisclaimer(uint256 propertyId) external {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.agreeDisclaimer();
+    function agreeDisclaimer(uint256 pid)
+      external whenNotPaused validProperty(pid)
+    {
+        _t(pid).agreeDisclaimerFor(msg.sender);
     }
 
-    function reserveTokens(
-        uint256 propertyId,
-        uint256 amount
-    ) external payable {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.reserveTokens{value: msg.value}(amount);
+    function reserveTokens(uint256 pid, uint256 amount)
+      external payable whenNotPaused validProperty(pid)
+    {
+        _t(pid).reserveTokensFor{value: msg.value}(msg.sender, amount);
     }
 
-    function refundUnagreedBuyer(
-        uint256 propertyId,
-        address buyer
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.refundUnagreedBuyer(buyer);
+    function refundUnagreedBuyer(uint256 pid, address b)
+      external onlyOwner whenNotPaused validProperty(pid)
+    {
+        require(b != address(0), "Factory: zero buyer");
+        _t(pid).refundUnagreedBuyer(b);
     }
 
-    function increaseSupply(
-        uint256 propertyId,
-        uint256 amount
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.increaseSupply(amount);
-        emit SupplyIncreased(propertyId, amount);
+    function increaseSupply(uint256 pid, uint256 amt)
+      external onlyOwner validProperty(pid)
+    {
+        _t(pid).increaseSupply(amt);
     }
 
-    function updateSellerAddress(
-        uint256 propertyId,
-        address newSeller
-    ) external {
-        Property storage p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        if (msg.sender != p.seller) revert Unauthorized();
-
+    function updateSellerAddress(uint256 pid, address newSeller)
+      external validProperty(pid)
+    {
+        require(newSeller != address(0), "Factory: zero newSeller");
+        Property storage p = properties[pid];
+        if (msg.sender != p.seller && msg.sender != whimsy) revert Unauthorized();
         p.seller = newSeller;
-        token.updateSellerAddress(newSeller);
-        emit SellerUpdated(propertyId, newSeller);
+        _t(pid).updateSellerAddress(newSeller);
+        emit SellerUpdated(pid, newSeller);
     }
 
-    function clawback(
-        uint256 propertyId,
-        address tokenOwner
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        require(p.token != address(0), "Invalid token address");
-
-        IPropertyToken token = IPropertyToken(p.token);
-        uint256 balance = token.balanceOf(tokenOwner);
-        require(balance > 0, "No tokens to claw back");
-
-        token.operatorTransfer(tokenOwner, owner(), balance);
-        emit Clawback(propertyId, tokenOwner, balance);
+    function clawback(uint256 pid, address who)
+      external onlyOwner validProperty(pid)
+    {
+        require(who != address(0), "Factory: zero owner");
+        IPropertyToken tok = _t(pid);
+        uint256 bal = tok.balanceOf(who);
+        require(bal > 0, "Factory: no tokens");
+        tok.operatorTransfer(who, owner(), bal);
+        emit Clawback(pid, who, bal);
     }
 
-    // ========= Governance ==========
-
-    function createProposal(
-        uint256 propertyId,
-        string memory description
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        uint256 proposalId = token.proposalsLength();
-        token.createProposal(description);
-        emit ProposalCreated(propertyId, proposalId, description);
+    function pauseToken(uint256 pid) external onlyOwner whenNotPaused validProperty(pid) {
+        _t(pid).pause();
+    }
+    function unpauseToken(uint256 pid) external onlyOwner validProperty(pid) {
+        _t(pid).unpause();
+    }
+    function toggleTokenTransfers(uint256 pid, bool e) external onlyOwner validProperty(pid) {
+        _t(pid).toggleTransfers(e);
+    }
+    function setTokenOperator(uint256 pid, address op) external onlyOwner validProperty(pid) {
+        _t(pid).setOperator(op);
+    }
+    function mintMoreSupply(uint256 pid, uint256 amt)   external onlyOwner validProperty(pid) {
+        _t(pid).increaseSupply(amt);
+    }
+    function withdrawETHFromToken(uint256 pid)
+      external onlyOwner validProperty(pid)
+    {
+        _t(pid).withdraw();
+    }
+    function transferTokenOwnership(uint256 pid, address newOwner)
+      external onlyOwner validProperty(pid)
+    {
+        require(newOwner != address(0), "Factory: zero newOwner");
+        IPropertyToken tok = _t(pid);
+        address prev = tok.owner();
+        tok.transferOwnership(newOwner);
+        emit TokenOwnershipTransferred(pid, prev, newOwner);
     }
 
-    function vote(
-        uint256 propertyId,
-        uint256 proposalId,
-        bool support
-    ) external {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.vote(proposalId, support);
-        uint256 weight = IPropertyToken(p.token).balanceOf(msg.sender);
-        emit Voted(propertyId, proposalId, msg.sender, support, weight);
+    function createProposal(uint256 pid, string calldata desc)
+      external onlyOwner validProperty(pid)
+    {
+        _t(pid).createProposal(desc);
+    }
+    function vote(uint256 pid, uint256 propId, bool support)
+      external validProperty(pid)
+    {
+        _t(pid).voteFor(msg.sender, propId, support);
+    }
+    function finalizeProposal(uint256 pid, uint256 propId)
+      external onlyOwner validProperty(pid)
+    {
+        _t(pid).finalizeProposal(propId);
     }
 
-    function finalizeProposal(
-        uint256 propertyId,
-        uint256 proposalId
-    ) external onlyOwner {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        token.finalizeProposal(proposalId);
-        (, uint256 yesVotes, uint256 noVotes, bool finalized) = IPropertyToken(
-            p.token
-        ).getProposal(proposalId);
-        emit ProposalFinalized(
-            propertyId,
-            proposalId,
-            yesVotes > noVotes && finalized
-        );
+    // getters just forward to token:
+    function getPostMoneyValuation(uint256 pid, uint256 pre)
+      external view validProperty(pid) returns (uint256)
+    {
+        return _t(pid).getPostMoneyValuation(pre);
     }
-
-    // ========= Getters ==========
-
-    function getPostMoneyValuation(
-        uint256 propertyId,
-        uint256 preMoneyValuation
-    ) external view returns (uint256) {
-        Property memory p = properties[propertyId];
-        IPropertyToken token = IPropertyToken(p.token);
-        return token.getPostMoneyValuation(preMoneyValuation);
+    function getIPropertyToken(uint256 pid)
+      external view validProperty(pid) returns (address)
+    {
+        return properties[pid].token;
     }
-
-    function getIPropertyToken(
-        uint256 propertyId
-    ) external view returns (address) {
-        return properties[propertyId].token;
+    function getSeller(uint256 pid)
+      external view validProperty(pid) returns (address)
+    {
+        return properties[pid].seller;
     }
-
-    function getSeller(uint256 propertyId) external view returns (address) {
-        return properties[propertyId].seller;
+    function proposalsLength(uint256 pid)
+      external view validProperty(pid) returns (uint256)
+    {
+        return _t(pid).proposalsLength();
+    }
+    function getProposal(uint256 pid, uint256 propId)
+      external view validProperty(pid)
+      returns (string memory, uint256, uint256, bool)
+    {
+        return _t(pid).getProposal(propId);
     }
 }

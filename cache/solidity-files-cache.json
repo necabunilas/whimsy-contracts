@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyToken.sol": {
-      "lastModificationDate": 1743770917727,
-      "contentHash": "98566e8a9a589ecd9053a165838196c4",
+      "lastModificationDate": 1745025226758,
+      "contentHash": "224927b1805f416ea2566739f01f8e01",
       "sourceName": "contracts/PropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -31,7 +31,10 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/utils/Pausable.sol",
+        "./PropertyGovernance.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
@@ -268,8 +271,8 @@
       ]
     },
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyTokenFactory.sol": {
-      "lastModificationDate": 1743770950221,
-      "contentHash": "d7b91963140c5d05505bcbd76a629b3f",
+      "lastModificationDate": 1745023024003,
+      "contentHash": "81c3c2e999a9c03f58974bba16947fde",
       "sourceName": "contracts/PropertyTokenFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -297,6 +300,7 @@
       },
       "imports": [
         "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/utils/Pausable.sol",
         "./interfaces/IPropertyToken.sol",
         "./PropertyToken.sol"
       ],
@@ -308,8 +312,8 @@
       ]
     },
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/interfaces/IPropertyToken.sol": {
-      "lastModificationDate": 1743770936349,
-      "contentHash": "e6237b531177ed954157b05eeb39a10a",
+      "lastModificationDate": 1745020358841,
+      "contentHash": "cdcaad8949b6482b30a64611f85ea888",
       "sourceName": "contracts/interfaces/IPropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -341,6 +345,192 @@
       ],
       "artifacts": [
         "IPropertyToken"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/node_modules/hardhat/console.sol": {
+      "lastModificationDate": 1743072338780,
+      "contentHash": "681c532e816169606d13a5fe8b475074",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/node_modules/@openzeppelin/contracts/utils/Pausable.sol": {
+      "lastModificationDate": 1743074638970,
+      "contentHash": "24e52f6ef3868e6fca664a423140bee9",
+      "sourceName": "@openzeppelin/contracts/utils/Pausable.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 50
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Pausable"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol": {
+      "lastModificationDate": 1743074638970,
+      "contentHash": "190613e556d509d9e9a0ea43dc5d891d",
+      "sourceName": "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 50
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ReentrancyGuard"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/interfaces/IWhimsyOffering.sol": {
+      "lastModificationDate": 1745020358841,
+      "contentHash": "296088d647dbdd08f195fbddc0c68c20",
+      "sourceName": "contracts/interfaces/IWhimsyOffering.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 50
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IWhimsyOffering"
+      ]
+    },
+    "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyGovernance.sol": {
+      "lastModificationDate": 1745024817100,
+      "contentHash": "1f91c91083acf36104b214b66081c3ea",
+      "sourceName": "contracts/PropertyGovernance.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 50
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "PropertyTokenGovernance"
       ]
     }
   }
