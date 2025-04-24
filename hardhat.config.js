@@ -7,7 +7,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 50 // or try 1 for smallest size
+        runs: 200 // or try 1 for smallest size
       }
     }
   },

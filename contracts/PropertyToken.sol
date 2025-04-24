@@ -5,13 +5,26 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "./PropertyGovernance.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
+    using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
 
-contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTokenGovernance {
+    IERC20 public immutable paymentToken;
+
+    bool public requireSignatureOnTransfer = true;
+    mapping(bytes32 => bool) public bufferUsed;
+
     address public seller;
     address public operator;
     address public factory;
+    address public governanceContract;
+    address public whimsy;
+    bool public saleEnded = false;
 
     bool public transfersEnabled = true;
 
@@ -21,6 +34,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
     uint256 public totalRaised;
     uint256 public totalReserved;
     uint256 public saleSupplySnapshot;
+    address private signer;
 
     uint8 public constant PERCENT_BASE = 100;
     uint8 public constant WHIMSY_ALLOCATION_PERCENT = 3;
@@ -56,6 +70,8 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
     event Withdrawn(uint256 amount, address to);
     event DisclaimerAgreed(address indexed buyer);
     event RefundIssued(address indexed buyer, uint256 amount);
+    event WhimsyUpdated(address indexed oldWhimsy, address indexed newWhimsy);
+    event SaleEndedEarly();
 
     modifier onlyOperator() {
         require(msg.sender == operator, "Not authorized: operator only");
@@ -73,22 +89,29 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
         uint256 initialSupply_,
         address seller_,
         address whimsyAddress,
-        address owner_
+        address owner_,
+        address paymentTokenAddress,
+        address assignedSigner
     ) ERC20(name_, symbol_) Ownable(owner_) {
         require(seller_ != address(0), "Invalid seller");
         require(whimsyAddress != address(0), "Invalid whimsy");
+        require(paymentTokenAddress != address(0), "Invalid paymentToken");
 
+        whimsy = whimsyAddress;
         seller = seller_;
         factory = owner_;
+        paymentToken = IERC20(paymentTokenAddress);
+        signer = assignedSigner;
+        // mint the initial split
+        uint256 whimsyAlloc = (initialSupply_ * WHIMSY_ALLOCATION_PERCENT) /
+            PERCENT_BASE;
+        uint256 sellerAlloc = initialSupply_ - whimsyAlloc;
+        _mint(seller_, sellerAlloc);
+        _mint(whimsyAddress, whimsyAlloc);
+    }
 
-
-        uint256 whimsyAllocation = (initialSupply_ *
-            WHIMSY_ALLOCATION_PERCENT) / PERCENT_BASE;
-        uint256 sellerAllocation = (initialSupply_ *
-            SELLER_ALLOCATION_PERCENT) / PERCENT_BASE;
-
-        _mint(seller_, sellerAllocation);
-        _mint(whimsyAddress, whimsyAllocation);
+    function decimals() public pure override returns (uint8) {
+        return 6; // or 6 if you want to match USDC-style decimals
     }
 
     function pause() external onlyOwner {
@@ -99,16 +122,30 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
         _unpause();
     }
 
+    function setWhimsy(address newWhimsy) external onlyOwner {
+        require(newWhimsy != address(0), "Invalid address");
+        emit WhimsyUpdated(whimsy, newWhimsy);
+        whimsy = newWhimsy;
+    }
+
+    function setRequireSignatureOnTransfer(bool on) external onlyOwner {
+        requireSignatureOnTransfer = on;
+    }
 
     function setOperator(address newOperator) external onlyOwner {
-        require(newOperator != address(0), "Invalid operator address");
-        emit OperatorUpdated(operator, newOperator);
+        require(newOperator != address(0), "Invalid operator");
         operator = newOperator;
+        emit OperatorUpdated(operator, newOperator);
     }
 
     function setFactory(address _factory) external onlyOwner {
         require(factory == address(0), "Factory already set");
         factory = _factory;
+    }
+
+    function setSigner(address assignedSigner) public onlyOwner {
+        require(factory == address(0), "Invalid address");
+        signer = assignedSigner;
     }
 
     function toggleTransfers(bool enabled) external onlyOwner {
@@ -117,42 +154,37 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
     }
 
     function updateSellerAddress(address newSeller) external onlyOwner {
-        require(newSeller != address(0), "Invalid address");
+        require(newSeller != address(0), "Invalid seller");
         emit SellerAddressUpdated(seller, newSeller);
         seller = newSeller;
     }
 
     function increaseSupply(uint256 amount) external onlyOwner {
-        require(tokensForSale == 0, "Can't mint during active sale");
+        require(tokensForSale == 0, "Can't mint during sale");
         _mint(seller, amount);
         emit SupplyIncreased(amount);
     }
 
-    function withdraw() external nonReentrant whenNotPaused {
+    function withdrawPayment() external nonReentrant whenNotPaused {
         require(
             msg.sender == owner() || msg.sender == operator,
             "Not authorized"
         );
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
-
-        (bool sent, ) = payable(seller).call{value: balance}("");
-        require(sent, "Withdraw failed");
-
-        emit Withdrawn(balance, seller);
+        require(saleEnded, "Cannot withdraw during sale");
+        uint256 bal = paymentToken.balanceOf(address(this));
+        require(bal > 0, "No funds to withdraw");
+        paymentToken.safeTransfer(seller, bal);
+        emit Withdrawn(bal, seller);
     }
-
 
     function setSaleParameters(
         uint256 _tokensForSale,
         uint256 _tokenPrice,
         uint256 _targetSellerOwnership
-    ) external onlyOperator whenNotPaused {
-        require(_tokenPrice > 0, "Token price must be > 0");
+    ) external onlyOwner whenNotPaused {
+        require(_tokenPrice > 0, "Token price > 0");
 
         uint256 currentTotal = totalSupply();
-
-
         saleSupplySnapshot = currentTotal;
 
         require(
@@ -165,15 +197,14 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
                 (currentTotal * MAX_SELLER_PERCENT) / PERCENT_BASE,
             "Target <= 30%"
         );
-
-        require(balanceOf(seller) >= _tokensForSale, "Seller balance low");
+        require(balanceOf(seller) >= _tokensForSale, "Seller bal low");
         require(
             balanceOf(seller) - _tokensForSale == _targetSellerOwnership,
-            "tokensForSale must equal seller balance minus target"
+            "Bad sale/tgt split"
         );
 
-        tokenPrice = _tokenPrice;
         tokensForSale = _tokensForSale;
+        tokenPrice = _tokenPrice;
         targetSellerOwnership = _targetSellerOwnership;
 
         emit SaleParametersUpdated(
@@ -191,71 +222,66 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
     function reserveTokensFor(
         address buyer,
         uint256 amount
-    ) external payable onlyFactory {
-        require(msg.value == amount * tokenPrice, "Incorrect ETH sent");
-        require(amount > 0, "Amount must be > 0");
-        require(pendingReservations[buyer].amount == 0, "Reservation exists");
-        
-        require(
-            amount <= tokensForSale - totalReserved,
-            "Not enough tokens left"
-        );
+    ) external onlyFactory {
+        require(amount > 0, "Amount>0");
+        require(pendingReservations[buyer].amount == 0, "Already reserved");
+        require(amount <= tokensForSale - totalReserved, "Exceeds sale");
 
-        require(msg.value == amount * tokenPrice, "Incorrect ETH sent");
+        // pull paymentToken in advance
+        uint256 cost = (amount * tokenPrice) / (10 ** decimals());
+        paymentToken.safeTransferFrom(buyer, address(this), cost);
 
-        pendingReservations[buyer] = Reservation({
-            amount: amount,
-            timestamp: block.timestamp
-        });
+        pendingReservations[buyer] = Reservation(amount, block.timestamp);
         totalReserved += amount;
     }
 
     function refundUnagreedBuyer(
         address buyer
-    ) external onlyOperator whenNotPaused nonReentrant {
-        require(buyer != address(0), "refundUnagreedBuyer: zero address");
-        Reservation memory res = pendingReservations[buyer];
-        require(res.amount > 0, "No reservation");
-        require(!hasAgreedDisclaimer[buyer], "Buyer already agreed");
+    ) external onlyOwner whenNotPaused nonReentrant {
+        Reservation memory r = pendingReservations[buyer];
+        require(r.amount > 0, "No reservation");
+        require(!hasAgreedDisclaimer[buyer], "Already agreed");
         require(
-            block.timestamp >= res.timestamp + AGREEMENT_TIMEOUT,
-            "Timeout not reached"
+            block.timestamp >= r.timestamp + AGREEMENT_TIMEOUT,
+            "Too early"
         );
 
-        totalReserved -= res.amount;
+        totalReserved -= r.amount;
         delete pendingReservations[buyer];
 
-        (bool success, ) = payable(buyer).call{value: res.amount * tokenPrice}(
-            ""
-        );
-        require(success, "Refund failed");
+        uint256 cost = (r.amount * tokenPrice) / (10 ** decimals());
+        paymentToken.safeTransfer(buyer, cost);
+        emit RefundIssued(buyer, r.amount);
+    }
 
-        emit RefundIssued(buyer, res.amount);
+    function endSaleEarly() external onlyOwner whenNotPaused {
+        require(!saleEnded, "Sale already ended");
+        saleEnded = true;
+        tokensForSale = 0; // Optional: disable any further token purchases
+        emit SaleEndedEarly();
     }
 
     function buyTokensFor(
         address buyer,
         uint256 amount
-    ) external payable whenNotPaused nonReentrant onlyFactory {
-        require(hasAgreedDisclaimer[buyer], "Must agree to disclaimer first");
-        require(amount > 0, "Amount must be > 0");
+    ) external nonReentrant whenNotPaused onlyFactory {
+        require(!saleEnded, "Sale has ended");
+        require(hasAgreedDisclaimer[buyer], "Disclaim first");
+        require(amount > 0, "Amount>0");
 
-        Reservation memory res = pendingReservations[buyer];
-        if (res.amount > 0) {
-            require(amount == res.amount, "Must buy reserved amount");
-            require(msg.value == 0, "No extra ETH");
-
+        Reservation memory r = pendingReservations[buyer];
+        if (r.amount > 0) {
+            require(amount == r.amount, "Must buy reserved");
             totalReserved -= amount;
             delete pendingReservations[buyer];
-
             tokensForSale -= amount;
             totalRaised += amount * tokenPrice;
         } else {
-            require(amount <= tokensForSale - totalReserved, "Not enough left");
-            require(msg.value == amount * tokenPrice, "Incorrect ETH sent");
-
+            require(amount <= tokensForSale - totalReserved, "Exceeds sale");
+            uint256 cost = (amount * tokenPrice) / (10 ** decimals());
+            paymentToken.safeTransferFrom(buyer, address(this), cost);
             tokensForSale -= amount;
-            totalRaised += msg.value;
+            totalRaised += cost;
         }
 
         _transfer(seller, buyer, amount);
@@ -272,7 +298,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
         address from,
         address to,
         uint256 amount
-    ) external onlyOperator whenNotPaused {
+    ) external onlyOwner whenNotPaused {
         require(from != address(0), "operatorTransfer: from zero address");
         require(to != address(0), "operatorTransfer: to zero address");
         _transfer(from, to, amount);
@@ -292,15 +318,12 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
         address to,
         uint256 amount
     ) internal view {
-        
         require(
             transfersEnabled || from == address(0) || to == address(0),
             "Transfers are disabled"
         );
 
-
         if (from != address(0) && to != address(0)) {
-            
             if (from == seller) {
                 uint256 afterBalance = balanceOf(seller) - amount;
                 require(
@@ -308,7 +331,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
                     "Seller must retain minimum ownership"
                 );
             }
-            
+
             if (to != seller) {
                 uint256 snapshot = saleSupplySnapshot == 0
                     ? totalSupply()
@@ -322,50 +345,48 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable, PropertyTok
         }
     }
 
-    Proposal[] private _proposals;
+    function signatureTransfer(
+        bytes32 buffer,
+        bytes calldata sig,
+        address to,
+        uint256 amount
+    ) external whenNotPaused returns (bool) {
+        // 1) make sure this buffer hasn’t been used
+        require(!bufferUsed[buffer], "Buffer replay");
+        bufferUsed[buffer] = true;
 
-    function createProposal(string memory description)
-        public
-        override
-        onlyOperator
-    {
-        super.createProposal(description);
+        // 2) re‑compute the message
+        bytes32 h = keccak256(abi.encodePacked(buffer, msg.sender, to, amount));
+        // 3) prefix it & recover
+        bytes32 ethMsg = MessageHashUtils.toEthSignedMessageHash(h);
+        address recovered = ethMsg.recover(sig);
+        require(recovered == signer, "Invalid signature");
+
+        // 4) do the transfer
+        _transfer(msg.sender, to, amount);
+        return true;
     }
 
-    function voteFor(
-        address voter,
-        uint256 proposalId,
-        bool support
-    ) public override onlyOperator {
-        super.voteFor(voter, proposalId, support);
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        if (requireSignatureOnTransfer) revert("Direct transfers disabled");
+        return super.transfer(to, amount);
     }
 
-    function finalizeProposal(uint256 proposalId)
-        public
-        override
-        onlyOperator
-    {
-        super.finalizeProposal(proposalId);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        if (requireSignatureOnTransfer) revert("Direct transfers disabled");
+        return super.transferFrom(from, to, amount);
     }
 
-    function getProposal(
-        uint256 proposalId
-    )
-        public
-        view
-        override
-        returns (
-            string memory description,
-            uint256 yesVotes,
-            uint256 noVotes,
-            bool finalized
-        )
-    {
-        return super.getProposal(proposalId);
-    }
-
-    function proposalsLength() public view override returns (uint256) {
-        return super.proposalsLength();
+    function setGovernance(address _gov) external onlyOwner {
+        require(_gov != address(0), "Zero address");
+        governanceContract = _gov;
     }
 
     receive() external payable {}

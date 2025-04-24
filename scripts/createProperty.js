@@ -1,16 +1,30 @@
+// scripts/createPropertyToken.js
 const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  const factoryAddress = "0xf08313e987f5AB12A629cD6bce7300fdF593F239";
-  const seller = "0xA845cc8A1DF843a2D872A7D9F27eC330a068fcb8";
+  const factoryAddress = "0x8C8F4662c6eDd77691365101247317dDD6e3Bf25";
+  const seller         = "0x2618318ccd4192F26eF4577f29Ad508300CBD1f4";
 
-  const [caller] = await ethers.getSigners(); // This must match the seller
+  const [caller] = await ethers.getSigners();
 
   const Factory = await ethers.getContractFactory("PropertyTokenFactory", caller);
   const factory = Factory.attach(factoryAddress);
 
-  const tx = await factory.createIPropertyToken("NewProperty", "NPT", 1000, seller);
+  // 🏗 Parameters
+  const initialSupply = ethers.parseUnits("200000", 6); // 200,000 tokens at 6 decimals
+  const tokenPrice    = ethers.parseUnits("1", 6); // 1 USDC
+  const targetSellerOwnership = ethers.parseUnits("40000", 6); // 20% of 200k
+
+  console.log("📤 Creating property token...");
+  const tx = await factory.createIPropertyToken(
+    "Whimsy Property",
+    "WHIMZ",
+    initialSupply,
+    seller,
+    targetSellerOwnership,
+    tokenPrice
+  );
   const receipt = await tx.wait();
 
   const iface = factory.interface;
@@ -26,12 +40,9 @@ async function main() {
   const tokenAddress = event.args.tokenAddress;
   const propertyId = await factory.propertyCount();
 
-  console.log("🏠 Token deployed at:", tokenAddress);
-  console.log("📦 Property ID:", propertyId.toString());
-
-  // Optionally set sale params
-  await factory.setSaleParameters(propertyId, 700, 1, 300);
-  console.log("✅ Sale parameters set.");
+  console.log("✅ PropertyToken deployed!");
+  console.log("🏠 Token Address:", tokenAddress);
+  console.log("🆔 Property ID:", propertyId.toString());
 }
 
 main().catch((err) => {

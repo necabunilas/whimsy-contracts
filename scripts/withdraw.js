@@ -1,43 +1,70 @@
-const { ethers } = require("hardhat");
+// scripts/withdrawUsdc.js
 require("dotenv").config();
+const { ethers } = require("hardhat");
 
 async function main() {
-  const factoryAddress = "0xf08313e987f5AB12A629cD6bce7300fdF593F239";
-  const propertyId = 5;
-  const seller = "0xA845cc8A1DF843a2D872A7D9F27eC330a068fcb8";
+  // ── CONFIG ─────────────────────────────────────────────
+  const FACTORY_ADDR  = "0x8C8F4662c6eDd77691365101247317dDD6e3Bf25"; // your factory
+  const PROPERTY_ID   = 2;                                      // property id
+  const SELLER_ADDR   = "0x2618318ccd4192F26eF4577f29Ad508300CBD1f4"; // seller
+  const USDC_ADDR     = "0xCD2FB11F22FAE9c1c455C670e42F0Af5a5De391a"; // USDC token
 
-  const [caller] = await ethers.getSigners(); // Must be seller/owner
+  // ── SETUP OWNER/OPERATOR SIGNER & FACTORY ───────────────────
+  const [caller] = await ethers.getSigners();
+  console.log("🔐 Caller (must be factory owner/operator):", caller.address);
+
   const Factory = await ethers.getContractFactory("PropertyTokenFactory", caller);
-  const factory = Factory.attach(factoryAddress);
+  const factory = Factory.attach(FACTORY_ADDR);
 
-  // Get the token address from the factory
-  const tokenAddress = await factory.getIPropertyToken(propertyId);
-  const tokenBalanceBefore = await ethers.provider.getBalance(tokenAddress);
-  const sellerBalanceBefore = await ethers.provider.getBalance(seller);
+  // ── LOOK UP THE PROPERTY‐TOKEN & USDC CONTRACT ──────────────
+  const tokenAddr = await factory.getIPropertyToken(PROPERTY_ID);
+  console.log("🏠 PropertyToken @", tokenAddr);
 
-  console.log("🏦 PropertyToken balance before:", ethers.formatEther(tokenBalanceBefore), "ETH");
-  console.log("💰 Seller balance before:", ethers.formatEther(sellerBalanceBefore), "ETH");
+  const usdc = new ethers.Contract(
+    USDC_ADDR,
+    [
+      "function balanceOf(address) view returns (uint256)",
+      "function decimals()  view returns (uint8)"
+    ],
+    ethers.provider
+  );
 
-  // 🔄 Withdraw ETH
-  console.log("🔄 Withdrawing ETH from PropertyToken...");
-  const tx = await factory.withdrawETHFromToken(propertyId);
-  const receipt = await tx.wait();
+  // ── FETCH DECIMALS & PRE‐WITHDRAW BALANCES ───────────────────
+  const DEC             = await usdc.decimals();
+  const tokenUsdcBefore = await usdc.balanceOf(tokenAddr);
+  const sellerUsdcBefore= await usdc.balanceOf(SELLER_ADDR);
 
-  console.log("✅ Withdraw successful!");
-  console.log("📦 Transaction hash:", receipt.hash);
+  console.log(`🏦 Token USDC before:  ${ethers.formatUnits(tokenUsdcBefore, DEC)} USDC`);
+  console.log(`💰 Seller USDC before: ${ethers.formatUnits(sellerUsdcBefore, DEC)} USDC`);
 
-  // Recheck balances
-  const tokenBalanceAfter = await ethers.provider.getBalance(tokenAddress);
-  const sellerBalanceAfter = await ethers.provider.getBalance(seller);
+  if (tokenUsdcBefore == 0) {
+    console.log("⚠️  No USDC to withdraw.");
+    return;
+  }
 
-  console.log("🏦 PropertyToken balance after:", ethers.formatEther(tokenBalanceAfter), "ETH");
-  console.log("💰 Seller balance after:", ethers.formatEther(sellerBalanceAfter), "ETH");
+  // ── WITHDRAW USDC ───────────────────────────────────────────
+  console.log("🔄 Calling factory.withdrawPayment...");
+  try {
+    const tx = await factory.withdrawPayment(PROPERTY_ID, { gasLimit: 200_000 });
+    const receipt = await tx.wait();
+    console.log("✅ Withdraw tx hash:", receipt.transactionHash);
+  } catch (err) {
+    console.error("❌ Withdraw failed:", err.reason || err.message);
+    return;
+  }  
 
-  const delta = sellerBalanceAfter - sellerBalanceBefore;
-  console.log("📈 ETH received by seller:", ethers.formatEther(delta), "ETH");
+  // ── POST‐WITHDRAW BALANCES & DELTA ───────────────────────────
+  const tokenUsdcAfter  = await usdc.balanceOf(tokenAddr);
+  const sellerUsdcAfter = await usdc.balanceOf(SELLER_ADDR);
+  const delta           = sellerUsdcAfter - sellerUsdcBefore;
+
+  console.log(`🏦 Token USDC after:   ${ethers.formatUnits(tokenUsdcAfter, DEC)} USDC`);
+  console.log(`💰 Seller USDC after:  ${ethers.formatUnits(sellerUsdcAfter, DEC)} USDC`);
+  console.log(`📈 USDC transferred:   ${ethers.formatUnits(delta, DEC)} USDC`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error("❌ Script failed:", err);
+    process.exit(1);
+  });
