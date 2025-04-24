@@ -58,6 +58,17 @@ describe("PropertyTokenFactory & PropertyToken", function () {
     token = Token.attach(newProp.args.tokenAddress);
   });
 
+  it("should match payment token decimals (6)", async function () {
+    const paymentTokenDecimals = await usdc.decimals();
+    const propertyTokenDecimals = await token.decimals();
+
+    console.log("🔢 paymentToken.decimals():", paymentTokenDecimals);
+    console.log("🔢 propertyToken.decimals():", propertyTokenDecimals);
+
+    expect(paymentTokenDecimals).to.equal(6);
+    expect(propertyTokenDecimals).to.equal(6);
+  });
+
   it("deploys and mints correct allocations & sets ownership/operator", async () => {
     expect(await token.name()).to.equal("TestProp");
     expect(await token.symbol()).to.equal("TP");

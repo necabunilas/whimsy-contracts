@@ -35,6 +35,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
     uint256 public totalReserved;
     uint256 public saleSupplySnapshot;
     address private signer;
+    uint8 public paymentTokenDecimals;
 
     uint8 public constant PERCENT_BASE = 100;
     uint8 public constant WHIMSY_ALLOCATION_PERCENT = 3;
@@ -72,6 +73,13 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
     event RefundIssued(address indexed buyer, uint256 amount);
     event WhimsyUpdated(address indexed oldWhimsy, address indexed newWhimsy);
     event SaleEndedEarly();
+    event SignatureTransfer(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        bytes32 buffer
+    );
+    event ETHWithdrawn(uint256 amount, address to);
 
     modifier onlyOperator() {
         require(msg.sender == operator, "Not authorized: operator only");
@@ -102,6 +110,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
         factory = owner_;
         paymentToken = IERC20(paymentTokenAddress);
         signer = assignedSigner;
+        paymentTokenDecimals = IERC20Metadata(paymentTokenAddress).decimals();
         // mint the initial split
         uint256 whimsyAlloc = (initialSupply_ * WHIMSY_ALLOCATION_PERCENT) /
             PERCENT_BASE;
@@ -110,8 +119,8 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
         _mint(whimsyAddress, whimsyAlloc);
     }
 
-    function decimals() public pure override returns (uint8) {
-        return 6; // or 6 if you want to match USDC-style decimals
+    function decimals() public view override returns (uint8) {
+        return paymentTokenDecimals;
     }
 
     function pause() external onlyOwner {
@@ -139,12 +148,12 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
     }
 
     function setFactory(address _factory) external onlyOwner {
-        require(factory == address(0), "Factory already set");
+        require(_factory != address(0), "Factory cannot be zero address");
         factory = _factory;
     }
 
     function setSigner(address assignedSigner) public onlyOwner {
-        require(factory == address(0), "Invalid address");
+        require(assignedSigner != address(0), "Signer cannot be zero address");
         signer = assignedSigner;
     }
 
@@ -269,20 +278,22 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
         require(hasAgreedDisclaimer[buyer], "Disclaim first");
         require(amount > 0, "Amount>0");
 
+        uint256 cost = (amount * tokenPrice) / (10 ** decimals());
+
         Reservation memory r = pendingReservations[buyer];
         if (r.amount > 0) {
             require(amount == r.amount, "Must buy reserved");
+
             totalReserved -= amount;
             delete pendingReservations[buyer];
-            tokensForSale -= amount;
-            totalRaised += amount * tokenPrice;
+            // cost already paid in reserveTokensFor
         } else {
             require(amount <= tokensForSale - totalReserved, "Exceeds sale");
-            uint256 cost = (amount * tokenPrice) / (10 ** decimals());
             paymentToken.safeTransferFrom(buyer, address(this), cost);
-            tokensForSale -= amount;
-            totalRaised += cost;
         }
+
+        tokensForSale -= amount;
+        totalRaised += cost;
 
         _transfer(seller, buyer, amount);
         emit TokensPurchased(buyer, amount);
@@ -345,6 +356,14 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
         }
     }
 
+    function withdrawETH() external onlyOwner {
+        uint256 bal = address(this).balance;
+        require(bal > 0, "No ETH to withdraw");
+        (bool success, ) = payable(seller).call{value: bal}("");
+        require(success, "ETH transfer failed");
+        emit ETHWithdrawn(bal, seller);
+    }
+
     function signatureTransfer(
         bytes32 buffer,
         bytes calldata sig,
@@ -364,6 +383,7 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
 
         // 4) do the transfer
         _transfer(msg.sender, to, amount);
+        emit SignatureTransfer(msg.sender, to, amount, buffer);
         return true;
     }
 
@@ -384,12 +404,11 @@ contract PropertyToken is ERC20, Ownable, ReentrancyGuard, Pausable {
         return super.transferFrom(from, to, amount);
     }
 
-    function setGovernance(address _gov) external onlyOwner {
-        require(_gov != address(0), "Zero address");
-        governanceContract = _gov;
+    receive() external payable {
+        revert("ETH not accepted");
     }
 
-    receive() external payable {}
-
-    fallback() external payable {}
+    fallback() external payable {
+        revert("ETH not accepted");
+    }
 }

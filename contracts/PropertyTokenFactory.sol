@@ -312,15 +312,4 @@ contract PropertyTokenFactory is Ownable, Pausable {
         return _t(pid).proposalsLength();
     }
 
-    function getProposal(
-        uint256 pid,
-        uint256 propId
-    )
-        external
-        view
-        validProperty(pid)
-        returns (string memory, uint256, uint256, bool)
-    {
-        return _t(pid).getProposal(propId);
-    }
 }

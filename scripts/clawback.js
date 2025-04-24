@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 
 async function main() {
   // ── CONFIG ─────────────────────────────────────────────
-  const FACTORY_ADDR = "0x9266F18FD4B8542eeAe5Cc9b019E5356bABab05d";
+  const FACTORY_ADDR = "0x83C6b904C163B488069ad65405448Be53CfA3D78";
   const PROPERTY_ID  = 1;
   const TARGET_OWNER = "0x278604Cf1CB4c1680278E3f6d541764F52358591";
 

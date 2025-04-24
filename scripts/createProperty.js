@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  const factoryAddress = "0x8C8F4662c6eDd77691365101247317dDD6e3Bf25";
+  const factoryAddress = "0x83C6b904C163B488069ad65405448Be53CfA3D78";
   const seller         = "0x2618318ccd4192F26eF4577f29Ad508300CBD1f4";
 
   const [caller] = await ethers.getSigners();

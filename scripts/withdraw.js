@@ -4,8 +4,8 @@ const { ethers } = require("hardhat");
 
 async function main() {
   // ── CONFIG ─────────────────────────────────────────────
-  const FACTORY_ADDR  = "0x8C8F4662c6eDd77691365101247317dDD6e3Bf25"; // your factory
-  const PROPERTY_ID   = 2;                                      // property id
+  const FACTORY_ADDR  = "0x83C6b904C163B488069ad65405448Be53CfA3D78"; // your factory
+  const PROPERTY_ID   = 1;                                      // property id
   const SELLER_ADDR   = "0x2618318ccd4192F26eF4577f29Ad508300CBD1f4"; // seller
   const USDC_ADDR     = "0xCD2FB11F22FAE9c1c455C670e42F0Af5a5De391a"; // USDC token
 

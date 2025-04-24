@@ -4,10 +4,10 @@ const { ethers } = require("hardhat");
 
 async function main() {
   // ── CONFIG ─────────────────────────────────────────────
-  const FACTORY_ADDR    = "0x8C8F4662c6eDd77691365101247317dDD6e3Bf25"; // your factory
-  const PROPERTY_ID     = 2;                                      // the property you created
+  const FACTORY_ADDR    = "0x83C6b904C163B488069ad65405448Be53CfA3D78"; // your factory
+  const PROPERTY_ID     = 1;                                      // the property you created
   const USDC_ADDR       = "0xCD2FB11F22FAE9c1c455C670e42F0Af5a5De391a"; // your mock‑USDC
-  const HUMAN_TOKENS    = 50n;                                    // “30” tokens to buy
+  const HUMAN_TOKENS    = 150n;                                    // “30” tokens to buy
 
   // ── SETUP ──────────────────────────────────────────────
   const rpc     = process.env.BASE_RPC;

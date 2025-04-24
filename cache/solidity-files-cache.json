@@ -2,15 +2,15 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyToken.sol": {
-      "lastModificationDate": 1745466163975,
-      "contentHash": "0385ae6e2bd194e404271cdc4c1013d8",
+      "lastModificationDate": 1745473642667,
+      "contentHash": "6fce7c4340737cdba62ce69993cb1f3e",
       "sourceName": "contracts/PropertyToken.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -55,7 +55,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -96,7 +96,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -134,7 +134,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -170,7 +170,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -208,7 +208,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -244,7 +244,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -274,15 +274,15 @@
       ]
     },
     "/Users/cabunilas.ne/Documents/contracts/property-token-project/contracts/PropertyTokenFactory.sol": {
-      "lastModificationDate": 1745466911263,
-      "contentHash": "2b63c058ca453e2e958ab0b36dcd43cd",
+      "lastModificationDate": 1745471391980,
+      "contentHash": "9dd911a10ee7e3224d6167cb31596d50",
       "sourceName": "contracts/PropertyTokenFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -324,7 +324,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -396,7 +396,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -434,7 +434,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -470,7 +470,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -508,7 +508,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -546,7 +546,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -585,7 +585,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -624,7 +624,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -660,7 +660,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -696,7 +696,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -732,7 +732,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -770,7 +770,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -806,7 +806,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -844,7 +844,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -884,7 +884,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -923,7 +923,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -961,7 +961,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -997,7 +997,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 50
           },
           "evmVersion": "paris",
           "outputSelection": {
